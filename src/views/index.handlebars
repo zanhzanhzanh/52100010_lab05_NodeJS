@@ -1,0 +1,248 @@
+<script>
+    let takeId
+
+    // Onclick for Form
+    const openForm = function(data) {
+        // Show background
+        $(".parentDisable").show();
+
+        // get Value
+        let getVal = JSON.parse(decodeURIComponent(data));
+
+        takeId = getVal.id;
+
+        // Show modal
+        $('#fixModal').modal();
+
+        // Insert value to Edit Modal
+        let getAllInput = $('#fixModal input');
+        $(getAllInput[0]).val(getVal.name);
+        if(getVal.gender === 'male') $(getAllInput[1]).prop("checked", true);
+        else $(getAllInput[2]).prop("checked", true);
+        $(getAllInput[3]).val(getVal.email);
+        if(getVal.status === "active") $(getAllInput[4]).prop("checked", true);
+    }
+
+    // Onclick for Delete Form
+    const openDel = function(data) {
+        // Show background
+        $(".parentDisable").show();
+
+        // get Value
+        let getVal = JSON.parse(decodeURIComponent(data));
+
+        takeId = getVal.id;
+
+        // Show modal
+        $('#delModal').modal();
+
+        // Insert name to Modal
+        $('#tagName').text(getVal.name);
+    }
+
+    $(document).ready(() => {
+        function setUpBackground() {
+            // Css cho background
+            $('.parentDisable').css({
+                "position": "fixed",
+                "top": "0",
+                "left": "0",
+                "background": "black",
+                "opacity": "0.8",
+                " z-index": "99",
+                "height": "100%",
+                "width": "100%"
+            })
+            // Ẩn background
+            $('.parentDisable').hide();
+        }
+
+        // Set background for Form, Toast
+        setUpBackground();
+
+        // Catch close form event to close background
+        $('#fixModal').on('hidden.bs.modal', function () {
+            $(".parentDisable").hide();
+        })
+        $('#delModal').on('hidden.bs.modal', function () {
+            $(".parentDisable").hide();
+        })
+
+        // Config for Mess
+        setTimeout(() => {
+            $('#flash-alert').fadeOut(2000)
+        }, 1000);
+
+        // Nút Add
+        $('.add').click(() => {
+            window.location.href = window.location.href + 'add';
+        })
+
+        // Send PUT request
+        $('#submitEdit').click(() => {
+            let getAllInput = $('#fixModal input');
+
+            axios({
+                method: 'put',
+                url: '/public-api/users/' + takeId,
+                data: {
+                    name: $(getAllInput[0]).val(),
+                    gender: $(getAllInput[1]).is(':checked') ? $(getAllInput[1]).val() : $(getAllInput[2]).val(),
+                    email: $(getAllInput[3]).val(),
+                    status: $(getAllInput[4]).is(':checked') ? $(getAllInput[4]).val() : "inactive",
+                },
+                headers: {
+                    'Content-Type':'application/x-www-form-urlencoded'
+                }
+            })
+            .then((res) => {
+                window.location.replace("/");
+            })
+        })
+
+        // Send Del request
+        $('#confirmDel').click(() => {
+            axios({
+                method: 'delete',
+                url: '/public-api/users/' + takeId,
+            })
+            .then((res) => {
+                window.location.replace("/");
+            })
+        })
+    })
+</script>
+
+{{!-- Main --}}
+<div class="container my-3">
+    <h4 class="my-5 text-primary text-center text-uppercase">Danh sách người dùng</h4>
+    <button class="btn btn-success btn-sm my-4 add">Thêm người dùng</button>
+    <p>Chọn một người dùng để xem chi tiết</p>
+    <table class="table table-striped border">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Họ và tên</th>
+                <th>Email</th>
+                <th>Giới tính</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each data}}
+                <tr>
+                    <td>{{this.id}}</td>
+                    <td><a href={{this.id}}>{{this.name}}</a></td>
+                    <td>{{this.email}}</td>
+                    <td>{{this.gender}}</td>
+                    <td>{{this.status}}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openForm('{{toString this}}')">Chỉnh sửa</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="openDel('{{toString this}}')">Xóa</button>
+                    </td>
+                </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>
+
+{{!-- Success Message --}}
+{{#each messages}}
+    <div id="flash-alert" class="fixed-top alert alert-success text-center w-25 mx-auto my-3">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <span><strong>{{this}}</strong></span>
+    </div>
+{{/each}}
+
+{{!-- Fail Message --}}
+{{#each failed}}
+    <div id="flash-alert" class="fixed-top alert alert-danger text-center w-25 mx-auto my-3">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <span><strong>{{this}}</strong></span>
+    </div>
+{{/each}}
+
+{{!-- <div id="flash-alert" class="fixed-top alert alert-success text-center w-25 mx-auto my-3">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <span>Đã xóa người dùng <strong>Nguyễn Xuân Vinh</strong></span>
+</div> --}}
+
+<!-- background -->
+<div class="parentDisable"></div>
+
+<!-- Confirm delete -->
+<div class="modal fade" id="delModal">
+    <div class="modal-dialog position-absolute" style="top:15%; right:40%">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Xóa người dùng</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                Bạn có chắc rằng muốn xóa <strong id="tagName"></strong>?
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="confirmDel">Xóa</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Đóng</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- End Confirm delete -->
+
+
+<!-- Update user -->
+<div class="modal fade" id="fixModal">
+    <div class="modal-dialog position-absolute" style="top:15%; right:40%">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Cập nhật thông tin người dùng</h4>
+                <button type="button" class="close" data-dismiss="modal">×</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="user">Họ tên</label>
+                    <input class="form-control" type="text" placeholder="Nhập tên người dùng" id="name" name="name">
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-radio custom-control-inline">
+                        <input type="radio" class="custom-control-input" id="gender-male" name="gender" value="male" checked>
+                        <label class="custom-control-label" for="gender-male">Nam</label>
+                    </div>
+                    <div class="custom-control custom-radio custom-control-inline">
+                        <input type="radio" class="custom-control-input" id="gender-female" name="gender" value="female">
+                        <label class="custom-control-label" for="gender-female">Nữ</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input class="form-control" type="text" placeholder="Nhập email" id="email" name="email">
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="status" name="status" value="active">
+                    <label for="status"> Active</label><br>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="submitEdit">Cập nhật</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Update user -->
